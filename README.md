@@ -1,95 +1,61 @@
 # cdeploy
-conventional deployment to AWS lambda.
-This project deploys your python code to AWS lambda with libraries and other resources.
-
-for easy to manage lambda and other resources.
+conventional deployment to AWS lambda
 
 # Requirements
-```
-gem install aws-sdk
-gem install rubyzip
-gem install unindent
-```
+- aws-sdk for ruby
+- rubyzip
+
+- aws configure credenditals（AWS_ACCESS_KEY, AWS_ACCESS_SECRET)
+   gem install aws-sdk
+   gem install rubyzip
+   gem install unindent
+
 Then, set the aws credentials
 
-```
 %> aws configure
-```
 
-# Construct project structure
-```
- <Folder:: name of project>
-   +-- deploy(this folder)
-   +-- <Folder:: feature 1>
-     +-- <Folder:: name of lambda function A>
-     +-- <Folder:: name of lambda function B>
-             :
-     +-- <Folder:: name of lambda function N>
-   +-- <Folder:: feature 2>
-     +-- <Folder:: name of lambda function X>
-     +-- <Folder:: name of lambda function Y>
-```
-
-# Usage 
-
-1. move to deploy folder
+ deployフォルダに移動します
    cd deploy
 
-2. run deploy.rb
-  **There are 3 deploy options**
+ deploy.rb を実行します。
    1) ruby deploy.rb
-     or 
-   2) ruby deploy.rb -function=<name of function's folder>
-     ex) ruby deploy.rb -function=my_function
-     or
-   3) ruby deploy.rb -feature=<name of feature's folder>
-     ex) ruby deploy.rb -feature=my_feature
-     
-   **description**
-     1) deploy all features and functions
-     2) deploy specific function
-     3) deploy specific feature( deploy all functions under specified feature)
-     
- **other options**
-   -test(work in progress) => deploy for testing.(default: seoul region)
-     It is added 'staging-' prefix to bucket name if you link to s3.
-     It is deployed the IAM role named **<project_folder_name>-staging-role** if you deploy with -test option
-     All functions belongs to default subnet.
+     または
+   2) ruby deploy.rb -function=ファンクション名
+     例) ruby deploy.rb -function=<function_folder_name>
+     または
+   3) ruby deploy.rb -feature=フィーチャー名
+     例) ruby deploy.rb -feature=<feature_folder_name>
+   説明
+     1) プロジェクト フォルダ配下のすべてのファンクションをデプロイ。
+     2) -functionで指定したファンクションのみデプロイ
+     3) -featureで指定したフォルダの下のみデプロイ
+ その他のオプション
+   -test => ステージング環境にデプロイします。(default: ソウルリージョン)
+     s3をデプロイする場合、バケット名は、staging- というプレフィクスがつきます。
+     各ファンクションに適用されるロールは <project_folder_name>-staging-role になります。
+     ファンクションは全てデフォルトサブネットに所属します。
    -region=<<region>>
-     specify region to deploying
+     デプロイするリージョンを指定します。
 
-# Cunstructure in the deploy
-```
+ lambda デプロイスクリプトの構成
  deploy
-   +-- deliver => You can import libraries as follows
-     +-- bcrypt
-     +-- certifi
-     +-- chardet
-     +-- Crypto
+   +-- deliver => すべてのlambdaファンクションに配布するライブラリを格納(以下はデフォルトでインプリメントできるライブラリ)
+     +-- mysqldb
+     +-- dbconf
      +-- digest
-     +-- idna
-     +-- jinja2
-     +-- markupsafe
-     +-- mysqldb
-     +-- packaging
-     +-- pymssql
-     +-- requests
-     +-- s3_glue
-     +-- sns_glue
-     +-- urllib3
-   +-- aws_adapter.rb => adapter of aws-sdk
-   +-- deploy.rb => main deploy script
-   +-- zip_generator.rb => compression script
-   +-- .ignore.json => list of folders which ignoring deploy
-   +-- .policy.json => policies that attached all lambda function
-   +-- policy_doc.rb => policy templates
-   +-- **(Work in progress)**.resource.json => list of additional resources
-   +-- **(deplicated)**.database.json
-```
+     +-- s3_glue
+     +-- sns_glue
+   +-- aws_adapter.rb => aws-sdk 接続用のアダプタ
+   +-- deploy.rb => デプロイスクリプト
+   +-- zip_generator.rb => lambdaフォルダの圧縮スクリプト
+   +-- .ignore.json => デプロイしないlambdaファンクションのリスト
+   +-- .policy.json => すべてのlambdaファンクションに適用するIAMポリシーのリスト
+   +-- policy_doc.rb => lambda に適用する IAM ポリシーを定義したライブラリ
+   +-- .resource.json => 外部リソース(SQS、dynamoDBなど)の設定を記述
+   +-- .database.json => 本番とステージング環境のデータベース接続情報を記述
 
 
-# 各ファンクションフォルダ
- ```
+ 各ファンクションフォルダ
    +-- 外部ライブラリなど
    +-- lambda_function.py
    +-- .import.json deploy/deliver フォルダからインポートするライブラリのリスト
@@ -98,11 +64,9 @@ Then, set the aws credentials
                     ファイルがなければVPCには所属しない。
                     本番環境にのみ適用される
    +-- .lambda.json => lambdaファンクションの設定を記述。
- ```
 
 
-# プロジェクトフォルダの構成
-```
+ プロジェクトフォルダの構成
  プロジェクト名
    +-- 機能1
      +-- function A
@@ -113,11 +77,9 @@ Then, set the aws credentials
      +-- function X
      +-- function Y
              :
- ```
- 
  デプロイしたときのlambdaファンクション名は、"プロジェクト名-機能名-function名"
 
-# デプロイスクリプトの動作
+ デプロイスクリプトの動作
  上述したフォルダ構成において、function フォルダを "プロジェクト名-機能名-function名" でデプロイします。
  lambdaファンクションと同名のroleを作成しアタッチします。
  roleには以下の３つのIAMポリシーをアタッチします。
@@ -133,19 +95,17 @@ Then, set the aws credentials
  エラーになります。 バケット名がまだ未定 などの場合は、.import.json にglueライブラリを
  記述しないでください。
 
-# 各jsonファイルの形式
+ 各jsonファイルの形式
  各ラムダファンクションフォルダ
- ## .import.json
+ .import.json
  deploy/deliver以下のフォルダ名を列挙。
  例)
- ```
  [
    "mysqldb",
    "dbconf"
  ]
- ```
 
- ## .policy.json
+ .policy.json
  連携するawsサービスをキー、各サービスの識別名のリストをvalue。
  dynamodbはテーブル名、sqsはキュー名、snsはトピック名、s3はバケット名
  s3のみ、リストにはオブジェクトを入れる必要があるので注意。
@@ -154,20 +114,17 @@ Then, set the aws credentials
  記述がなければ、false です。
 
  例)
- ```
  {
-   "dynamodb": ["conversion_cancel_logs"],
-   "sqs": ["ConversionQueue"],
-   "s3": [{"name":"web.hoge.click", "is_event_source": false}]
-   "s3": [{"name":"web.hoge.click"}] => "↑と同じ"
+   "dynamodb": ["my_dynamo_db"],
+   "sqs": ["my_queue"],
+   "s3": [{"name":"mybucket", "is_event_source": false}]
+   "s3": [{"name":"mybucket"}] => "↑と同じ"
  }
- ```
 
- ## .lambda.json
+ .lambda.json
  lambda ファンクションの使用するメモリ、タイムアウト、環境変数を記述
  なければ、デフォルト値(128MB、3秒)です。
  例)
- ```
  {
    "timeout": "90",
    "memory": "256"
@@ -179,48 +136,38 @@ Then, set the aws credentials
      "DATABASE_NAME_MYSQL": "XXXXX"
     }
  }
- ```
 
- ## .vpc.json
+ .vpc.json
  lambda ファンクションが所属するvpcサブネットのidとセキュリティグループidを記述
  例)
- ```
  {
-   "subnet_ids": ["subnet-2538dd7d"],
-   "security_group_ids": ["sg-98002bfc"]
+   "subnet_ids": ["subnet-xxxxxx"],
+   "security_group_ids": ["sg-xxxxxxxx"]
  }
- ```
 
   deploy フォルダ
 
- ## .ignore.json
+ .ignore.json
  デプロイしないfeatureフォルダを列挙
  例)
- ```
  [
    "deploy",
    "test"
  ]
- ```
 
- ## .policy.json
+ .policy.json
  各ファンクションに共通で適用するポリシーARNを列挙
  例)
- ```
  [
    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
  ]
- ```
 
- ## .resource.json
+ .resource.json
  直接連携しない外部リソースの設定を記述（2016.10.27時点ではSQLのDelayのみ対応）
  例)
- ```
  {
    "sqs": {
-       "ConversionQueue": { "delay": "30" },
-       "ConversionKickbackRetryQueue": { "delay": "0" }
+       "MyQueue": { "delay": "30" },
+       "MyQueue2": { "delay": "0" }
    }
  }
- ```
-
